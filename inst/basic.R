@@ -28,6 +28,7 @@ while(TRUE) {
     prog <- basic_parse(line)
     if (is.null(prog)) next
     keys <- names(prog)
+    browser()
     if (is.numeric(keys)) {
       b$add_statements(prog)
     } else {

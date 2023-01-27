@@ -56,8 +56,10 @@ BasicLexer <- R6::R6Class(
     },
 
     t_error = function(t) {
-      cat(sprintf("Illegal character %s\n", t$value[1]))
+      w <- warningCondition(sprintf("Illegal character %s\n", t$value[1]))
+      warning(w)
       t$lexer$skip(1)
+      return(t)
     }
 
   )

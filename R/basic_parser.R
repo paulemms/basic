@@ -17,6 +17,8 @@ BasicParser <- R6::R6Class(
       c('right', 'UMINUS')
     ),
 
+    errors = list(),
+
     # A BASIC program is a series of statements.  We represent the program as a
     # dictionary of tuples indexed by line number.
 
@@ -40,17 +42,17 @@ BasicParser <- R6::R6Class(
     # This catch-all rule is used for any catastrophic errors.  In this case,
     # we simply return nothing
     p_program_error = function(doc='program : error', p) {
-      browser()
+      e <- errorCondition('Fatal error')
+      signalCondition(e)
       p$set(1, NULL)
-      p$parser$errorok <- 1
     },
 
     # Format of all BASIC statements.
     p_statement = function(doc='statement : INTEGER command NEWLINE', p) {
       if (is.character(p$get(3))) {
-        cat(sprintf("%s %s %s\n", p$get(3), "AT LINE", p$get(2)))
+        m <- simpleMessage(sprintf("%s %s %s", p$get(3), "AT LINE", p$get(2)))
+        signalCondition(m)
         p$set(1, NULL)
-        p$parser$errorok <- 1
       } else {
         lineno = as.integer(p$get(2))
         p$set(1, list(lineno, p$get(3)))
@@ -61,20 +63,20 @@ BasicParser <- R6::R6Class(
     p_statement_interactive = function(doc='statement : RUN NEWLINE
                                                       | LIST NEWLINE
                                                       | NEW NEWLINE', p) {
-      p$set(1, list(p$get(2), 0))
+      p$set(1, list(p$get(1), 0))
     },
 
     # Blank line number
     p_statement_blank = function(doc='statement : INTEGER NEWLINE', p) {
-        p$set(1, list(0, list('BLANK', as.integer(p$get(2)))))
+      p$set(1, list(0, list('BLANK', as.integer(p$get(2)))))
     },
 
 
     # Error handling for malformed statements
     p_statement_bad = function(doc='statement : INTEGER error NEWLINE', p) {
-      cat(sprintf("MALFORMED STATEMENT AT LINE %s\n", p$get(2)))
+      m <- simpleMessage(sprintf("MALFORMED STATEMENT AT LINE %s", p$get(2)))
+      signalCondition(m)
       p$set(1, NULL)
-      p$parser$errorok <- 1
     },
 
     # Blank line
@@ -88,7 +90,9 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_let_bad = function(doc='command : LET variable EQUALS error', p) {
-      p$set(1, "BAD EXPRESSION IN LET")
+      m <- simpleMessage("BAD EXPRESSION IN LET")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # READ statement
@@ -97,7 +101,9 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_read_bad = function(doc='command : READ error', p) {
-      p$set(1, "MALFORMED VARIABLE LIST IN READ")
+      m <- simpleMessage("MALFORMED VARIABLE LIST IN READ")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # DATA statement
@@ -106,7 +112,9 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_bad = function(doc='command : DATA error', p) {
-      p$set(1, "MALFORMED NUMBER LIST IN DATA")
+      m <- simpleMessage("MALFORMED NUMBER LIST IN DATA")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # PRINT statement
@@ -115,7 +123,9 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_print_bad = function(doc='command : PRINT error', p) {
-      p$set(1, "MALFORMED PRINT STATEMENT")
+      m <- simpleMessage("MALFORMED PRINT STATEMENT")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
 
@@ -141,7 +151,9 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_goto_bad = function(doc='command : GOTO error', p) {
-      p$set(1, "INVALID LINE NUMBER IN GOTO")
+      m <- simpleMessage("INVALID LINE NUMBER IN GOTO")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # IF-THEN statement
@@ -150,11 +162,15 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_if_bad = function(doc='command : IF error THEN INTEGER', p) {
-      p$set(1, "BAD RELATIONAL EXPRESSION")
+      m <- simpleMessage("BAD RELATIONAL EXPRESSION")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     p_command_if_bad2 = function(doc='command : IF relexpr THEN error', p) {
-      p$set(1, "INVALID LINE NUMBER IN THEN")
+      m <- simpleMessage("INVALID LINE NUMBER IN THEN")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # FOR statement
@@ -163,15 +179,21 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_for_bad_initial = function(doc='command : FOR ID EQUALS error TO expr optstep', p) {
-      p$set(1, "BAD INITIAL VALUE IN FOR STATEMENT")
+      m <- simpleMessage("BAD INITIAL VALUE IN FOR STATEMENT")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     p_command_for_bad_final = function(doc='command : FOR ID EQUALS expr TO error optstep', p) {
-      p$set(1, "BAD FINAL VALUE IN FOR STATEMENT")
+      m <- simpleMessage("BAD FINAL VALUE IN FOR STATEMENT")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     p_command_for_bad_step = function(doc='command : FOR ID EQUALS expr TO expr STEP error', p) {
-      p$set(1, "MALFORMED STEP IN FOR STATEMENT")
+      m <- simpleMessage("MALFORMED STEP IN FOR STATEMENT")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # Optional STEP qualifier on FOR statement
@@ -190,7 +212,9 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_next_bad = function(doc='command : NEXT error', p) {
-      p$set(1, "MALFORMED NEXT")
+      m <- simpleMessage("MALFORMED NEXT")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # END statement
@@ -214,11 +238,15 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_def_bad_rhs = function(doc='command : DEF ID LPAREN ID RPAREN EQUALS error', p) {
-      p$set(1, "BAD EXPRESSION IN DEF STATEMENT")
+      m <- simpleMessage("BAD EXPRESSION IN DEF STATEMENT")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     p_command_def_bad_arg = function(doc='command : DEF ID LPAREN error RPAREN EQUALS expr', p) {
-      p$set(1, "BAD ARGUMENT IN DEF STATEMENT")
+      m <- simpleMessage("BAD ARGUMENT IN DEF STATEMENT")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # GOSUB statement
@@ -227,7 +255,9 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_gosub_bad = function(doc='command : GOSUB error', p) {
-      p$set(1, "INVALID LINE NUMBER IN GOSUB")
+      m <- simpleMessage("INVALID LINE NUMBER IN GOSUB")
+      signalCondition(m)
+      p$set(1, NULL)
     },
 
     # RETURN statement
@@ -241,6 +271,8 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_dim_bad = function(doc='command : DIM error', p) {
+      m <- simpleMessage("MALFORMED VARIABLE LIST IN DIM")
+      signalCondition(m)
       p$set(1, "MALFORMED VARIABLE LIST IN DIM")
     },
 
@@ -374,7 +406,10 @@ BasicParser <- R6::R6Class(
 
     # Catastrophic error handler
     p_error = function(p) {
-      if(!is.null(p)) cat("Syntax error at EOF\n")
+      if(!is.null(p)) {
+        m <- simpleMessage("Syntax error at EOF")
+        signalCondition(m)
+      }
     }
 
   )

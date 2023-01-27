@@ -135,8 +135,8 @@ BasicInterpreter <- R6::R6Class(
           if (var %in% names(self$vars)) {
             return(self$vars[[var]])
           } else {
-            cat(sprintf("UNDEFINED VARIABLE %s AT LINE %s\n", var, as.integer(self$stat[self$pc])))
-            stop("RuntimeError")
+            e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s\n", var, as.integer(self$stat[self$pc])))
+            stop(e)
           }
         }
         # May be a list lookup or a function evaluation
@@ -149,8 +149,8 @@ BasicInterpreter <- R6::R6Class(
             if (var %in% names(self$lists)) {
               dim1val <- self$eval(dim1)
               if (dim1val < 1 || dim1val > length(self$lists[[var]])) {
-                cat(sprintf("LIST INDEX OUT OF BOUNDS AT LINE %s\n", self$stat[self$pc]))
-                stop("RuntimeError")
+                e <- errorCondition(sprintf("LIST INDEX OUT OF BOUNDS AT LINE %s\n", self$stat[self$pc]))
+                stop(e)
               }
               return(self$lists[[var]][dim1val])
             }
@@ -162,14 +162,14 @@ BasicInterpreter <- R6::R6Class(
             dim2val <- self$eval(dim2)
             if (dim1val < 1 || dim1val > nrow(self$tables[[var]]) || dim2val < 1 ||
                 dim2val > ncol(self$tables[[var]])) {
-              cat(sprintf("TABLE INDEX OUT OUT BOUNDS AT LINE %s\n", self$stat[self$pc]))
-              stop("RunTimeError")
+              e <- errorCondition(sprintf("TABLE INDEX OUT OUT BOUNDS AT LINE %s\n", self$stat[self$pc]))
+              stop(e)
             }
             return(self$tables[[var]][dim1val, dim2val])
           }
         }
-        cat(sprintf("UNDEFINED VARIABLE %s AT LINE %s\n", var, as.integer(self$stat[self$pc])))
-        stop("RuntimeError")
+        e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s\n", var, as.integer(self$stat[self$pc])))
+        stop(e)
       }
     },
 
@@ -205,8 +205,8 @@ BasicInterpreter <- R6::R6Class(
           self$lists[[var]] = rep(0, 10)
         }
         if (dim1val > length(self$lists[[var]])) {
-          cat(sprintf("DIMENSION TOO LARGE AT LINE %s\n", self$stat[self$pc]))
-          stop("RuntimeError")
+          e <- errorCondition(sprintf("DIMENSION TOO LARGE AT LINE %s\n", self$stat[self$pc]))
+          stop(e)
         }
         self$lists[[var]][dim1val] <- self$eval(value)
       }
@@ -218,8 +218,8 @@ BasicInterpreter <- R6::R6Class(
         }
         # Variable already exists
         if (dim1val > nrow(self$tables[[var]]) || dim2val > ncol(self$tables[[var]])) {
-          cat(sprintf("DIMENSION TOO LARGE AT LINE %s\n", self$stat[self$pc]))
-          stop("RuntimeError")
+          e <- errorCondition(sprintf("DIMENSION TOO LARGE AT LINE %s\n", self$stat[self$pc]))
+          stop(e)
         }
         self$tables[[var]][dim1val, dim2val] <- self$eval(value)
 
@@ -229,8 +229,8 @@ BasicInterpreter <- R6::R6Class(
     # Change the current line number
     goto = function(linenum) {
       if (!as.character(linenum) %in% names(self$prog)) {
-        cat(sprintf("UNDEFINED LINE NUMBER %d AT LINE %s\n", linenum, self$stat[self$pc]))
-        stop("RuntimeError")
+        e <- errorCondition(sprintf("UNDEFINED LINE NUMBER %d AT LINE %s\n", linenum, self$stat[self$pc]))
+        stop(e)
       }
       self$pc <- match(linenum, self$stat)
     },
@@ -443,18 +443,36 @@ BasicInterpreter <- R6::R6Class(
       return(sprintf("%s(%s,%s)", varname, self$expr_str(dim1), self$expr_str(dim2)))
     },
 
-    # # Create a program listing
+    # Create a program listing
+    list = function() {
+      stat <- names(self$prog)      # Ordered list of all line numbers
+      stat <- as.character(sort(as.integer(stat)))
+      browser()
+      for (line in stat) {
+        op <- instr[[1]]
+        switch(
+          op,
+          'END' = ,
+          'STOP' = ,
+          'RETURN'= cat(sprintf("%s %s", line, op), '\n'),
+          'REM' = cat(sprintf("%s %s", line, instr[[2]]), '\n'),
+          'PRINT' = browser(),
+          'LET' = cat(sprintf("%s LET %s = %s", line, self$var_str(instr[[2]]),
+                            self$expr_str(instr[[3]]))),
+          'READ' = browser(),
+          'IF' = browser(),
+          'GOTO' = browser(),
+          'FOR' = browser(),
+          'NEXT' = browser(),
+          'FUNC' = browser(),
+          'DIM' = browser(),
+          'DATA' = browser(),
+          stop()
+        )
+
+      }
+    },
     # def list(self):
-    #     stat = list(self.prog)      # Ordered list of all line numbers
-    #     stat.sort()
-    #     for line in stat:
-    #         instr = self.prog[line]
-    #         op = instr[0]
-    #         if op in ['END', 'STOP', 'RETURN']:
-    #             print("%s %s" % (line, op))
-    #             continue
-    #         elif op == 'REM':
-    #             print("%s %s" % (line, instr[1]))
     #         elif op == 'PRINT':
     #             _out = "%s %s " % (line, op)
     #             first = 1
@@ -471,9 +489,6 @@ BasicInterpreter <- R6::R6Class(
     #             if instr[2]:
     #                 _out += instr[2]
     #             print(_out)
-    #         elif op == 'LET':
-    #             print("%s LET %s = %s" %
-    #                   (line, self.var_str(instr[1]), self.expr_str(instr[2])))
     #         elif op == 'READ':
     #             _out = "%s READ " % line
     #             first = 1
@@ -521,7 +536,6 @@ BasicInterpreter <- R6::R6Class(
     #                 first = 0
     #                 _out += v
     #             print(_out)
-
 
     # Erase the current program
     erase = function() {self$prog <- NULL},
