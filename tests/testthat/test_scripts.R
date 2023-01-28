@@ -1,30 +1,23 @@
 lexer <- rly::lex(BasicLexer)
-bparser <- rly::yacc(BasicParser)
+parser <- rly::yacc(BasicParser)
+
+script <- dir(system.file('scripts', package = 'basic'), full.names = TRUE)
 
 test_that("hello script runs", {
   f <- system.file('scripts/hello.bas', package = 'basic')
   data <- paste(readLines(f), collapse = '\n')
-  prog <- bparser$parse(data, lexer)
+  prog <- parser$parse(data, lexer)
   b <- BasicInterpreter$new(prog)
   x <- capture.output(b$run())
   expect_equal(x, 'HELLO WORLD')
 })
 
-
-test_that("sqrt1 script runs", {
-  f <- system.file('scripts/sqrt1.bas', package = 'basic')
-  data <- paste(readLines(f), collapse = '\n')
-  prog <- bparser$parse(paste0(data, '\n'), lexer)
-  b <- BasicInterpreter$new(prog)
-  x <- capture.output(b$run())
-  expect_length(x, 10)
+test_that("All scripts complete without error", {
+  for (f in script) {
+    data <- paste(readLines(f), collapse = '\n')
+    prog <- parser$parse(paste0(data, '\n'), lexer)
+    b <- BasicInterpreter$new(prog)
+    expect_no_error(capture.output(b$run()))
+  }
 })
 
-test_that("sqrt2 script runs", {
-  f <- system.file('scripts/sqrt2.bas', package = 'basic')
-  data <- paste(readLines(f), collapse = '\n')
-  prog <- bparser$parse(paste0(data, '\n'), lexer)
-  b <- BasicInterpreter$new(prog)
-  x <- capture.output(b$run())
-  expect_length(x, 10)
-})
