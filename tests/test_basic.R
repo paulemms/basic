@@ -1,7 +1,6 @@
 # This file provides the runtime support for running a basic program
 
 # TODO
-# little x in a keyword messes up parser
 # need newline at END - python doesnt seem to need this
 # use snapshots for test output?
 
@@ -28,7 +27,7 @@ data <- '10 IF 20<=30 THEN 50\n 20 PRINT 22\n 50 END\n'
 data <- '5 READ A\n 10 PRINT A\n 20 DATA -7\n 999 END \n'
 data <- paste0(paste(readLines('inst/scripts/linear.bas'), collapse = '\n'), '\n')
 data <- '5 LET PRINT 2*(1.5+SIN((2)))\n 999 END \n'
-data <- '5 DIM A(A,2)\n 10 LET X=DIM \n 999 END \n'
+data <- '5 DIM A(A,2)\n 10 LET X=DIM \n 20 FOR I = 1 TO 10\n999 END \n'
 lexer <- rly::lex(BasicLexer)
 parser <- rly::yacc(BasicParser)
 withCallingHandlers(
@@ -36,7 +35,9 @@ withCallingHandlers(
   prog <- parser$parse(data, lexer, debug = nolog)
 )
 b <- BasicInterpreter$new(prog)
+
 b$run()
+
 
 # lexer <- rly::lex(BasicLexer)
 # lexer$input("5 PxRINT 2\n 999 END \n")

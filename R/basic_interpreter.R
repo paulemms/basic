@@ -66,7 +66,7 @@ BasicInterpreter <- R6::R6Class(
         }
       }
       if (has_end == 0) {
-        e <- simpleError("NO END INSTRUCTION\n")
+        e <- simpleError("NO END INSTRUCTION")
         stop(e)
       }
       if (has_end != lineno) {
@@ -94,7 +94,8 @@ BasicInterpreter <- R6::R6Class(
             }
           }
           if (!flag) {
-            e <- simpleError(sprintf("FOR WITHOUT NEXT AT LINE %s\n", self$stat[self$pc]))
+            e <- errorCondition(sprintf("FOR WITHOUT NEXT AT LINE %s", self$stat[self$pc]),
+                                line = self$stat[self$pc])
             stop(e)
           }
         }
@@ -133,7 +134,8 @@ BasicInterpreter <- R6::R6Class(
           if (var %in% names(self$vars)) {
             return(self$vars[[var]])
           } else {
-            e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s\n", var, as.integer(self$stat[self$pc])))
+            e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s", var, self$stat[self$pc]),
+                                line = self$stat[self$pc])
             stop(e)
           }
         }
@@ -147,7 +149,8 @@ BasicInterpreter <- R6::R6Class(
             if (var %in% names(self$lists)) {
               dim1val <- self$eval(dim1)
               if (dim1val < 1 || dim1val > length(self$lists[[var]])) {
-                e <- errorCondition(sprintf("LIST INDEX OUT OF BOUNDS AT LINE %s\n", self$stat[self$pc]))
+                e <- errorCondition(sprintf("LIST INDEX OUT OF BOUNDS AT LINE %s", self$stat[self$pc]),
+                                    line = self$stat[self$pc])
                 stop(e)
               }
               return(self$lists[[var]][dim1val])
@@ -160,13 +163,15 @@ BasicInterpreter <- R6::R6Class(
             dim2val <- self$eval(dim2)
             if (dim1val < 1 || dim1val > nrow(self$tables[[var]]) || dim2val < 1 ||
                 dim2val > ncol(self$tables[[var]])) {
-              e <- errorCondition(sprintf("TABLE INDEX OUT OUT BOUNDS AT LINE %s\n", self$stat[self$pc]))
+              e <- errorCondition(sprintf("TABLE INDEX OUT OUT BOUNDS AT LINE %s", self$stat[self$pc]),
+                                  line = self$stat[self$pc])
               stop(e)
             }
             return(self$tables[[var]][dim1val, dim2val])
           }
         }
-        e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s\n", var, as.integer(self$stat[self$pc])))
+        e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s", var, self$stat[self$pc]),
+                            line = self$stat[self$pc])
         stop(e)
       }
     },
@@ -203,7 +208,8 @@ BasicInterpreter <- R6::R6Class(
           self$lists[[var]] = rep(0, 10)
         }
         if (dim1val > length(self$lists[[var]])) {
-          e <- errorCondition(sprintf("DIMENSION TOO LARGE AT LINE %s\n", self$stat[self$pc]))
+          e <- errorCondition(sprintf("DIMENSION TOO LARGE AT LINE %s", self$stat[self$pc]),
+                              line = self$stat[self$pc])
           stop(e)
         }
         self$lists[[var]][dim1val] <- self$eval(value)
@@ -216,7 +222,8 @@ BasicInterpreter <- R6::R6Class(
         }
         # Variable already exists
         if (dim1val > nrow(self$tables[[var]]) || dim2val > ncol(self$tables[[var]])) {
-          e <- errorCondition(sprintf("DIMENSION TOO LARGE AT LINE %s\n", self$stat[self$pc]))
+          e <- errorCondition(sprintf("DIMENSION TOO LARGE AT LINE %s", self$stat[self$pc]),
+                              line = self$stat[self$pc])
           stop(e)
         }
         self$tables[[var]][dim1val, dim2val] <- self$eval(value)
@@ -227,7 +234,8 @@ BasicInterpreter <- R6::R6Class(
     # Change the current line number
     goto = function(linenum) {
       if (!as.character(linenum) %in% names(self$prog)) {
-        e <- errorCondition(sprintf("UNDEFINED LINE NUMBER %d AT LINE %s\n", linenum, self$stat[self$pc]))
+        e <- errorCondition(sprintf("UNDEFINED LINE NUMBER %d AT LINE %s", linenum, self$stat[self$pc]),
+                            line = self$stat[self$pc])
         stop(e)
       }
       self$pc <- match(linenum, self$stat)
@@ -351,15 +359,17 @@ BasicInterpreter <- R6::R6Class(
         else if (op == 'NEXT') {
           #browser()
           if (is.null(self$loops)) {
-            e <- simpleError(sprintf("NEXT WITHOUT FOR AT LINE %s\n", line))
-            stop()
+            e <- errorCondition(sprintf("NEXT WITHOUT FOR AT LINE %s", line),
+                             line = line)
+            stop(e)
           }
           nextvar <- instr[[2]]
           self$pc <- self$loops[[length(self$loops)]][[1]]
           loopinst <- self$prog[[self$stat[self$pc]]]
           forvar <- loopinst[[2]]
           if (nextvar != forvar) {
-            e <- simpleError(sprintf("NEXT DOESN'T MATCH FOR AT LINE %s\n",line))
+            e <- errorCondition(sprintf("NEXT DOESN'T MATCH FOR AT LINE %s", line),
+                                line = line)
             stop(e)
           }
           next
@@ -367,8 +377,9 @@ BasicInterpreter <- R6::R6Class(
         else if (op == 'GOSUB') {
           newline <- instr[[2]]
           if (!is.null(self$gosub)) {
-            e <- simpleError(sprintf("ALREADY IN A SUBROUTINE AT LINE %s\n", line))
-            stop()
+            e <- errorCondition(sprintf("ALREADY IN A SUBROUTINE AT LINE %s", line),
+                                line = line)
+            stop(e)
           }
           self$gosub <- self$stat[self$pc]
           self$goto(newline)
@@ -376,7 +387,8 @@ BasicInterpreter <- R6::R6Class(
         }
         else if (op == 'RETURN') {
           if (is.null(self$gosub)) {
-            e <- simpleError(sprintf("RETURN WITHOUT A GOSUB AT LINE %s\n", line))
+            e <- errorCondition(sprintf("RETURN WITHOUT A GOSUB AT LINE %s", line),
+                             line = line)
             stop(e)
           }
           self$goto(self$gosub)
