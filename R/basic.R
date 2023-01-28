@@ -3,18 +3,22 @@ basic <- function(basic_file = NULL) {
 
   lexer <- rly::lex(BasicLexer)
   parser <- rly::yacc(BasicParser)
+  nolog <- rly::NullLogger$new()
 
   # If a filename has been specified, we try to run it.
   # If a runtime error occurs, we bail out and enter
   # interactive mode below
   if (!is.null(basic_file)) {
+    if (!(file.exists(basic_file))) stop('Cannot read file ', basic_file)
     data <- paste(readLines(basic_file), collapse = '\n')
     data <- paste0(data, '\n')
-    prog <- parser$parse(data, lexer, debug = rly::NullLogger$new())
-    if (is.null(prog)) stop('Cannot read file ', basic_file)
+    withCallingHandlers(
+      message = function(m) print(m),
+      prog <- parser$parse(data, lexer, debug = nolog)
+    )
     b <- BasicInterpreter$new(prog)
     tryCatch(b$run(), error = function(e) print(e))
-    return()
+    return(invisible(b))
   } else {
     b <- BasicInterpreter$new(list())
   }
@@ -24,10 +28,13 @@ basic <- function(basic_file = NULL) {
     line <- readline("[BASIC] ")
     if (line == "") next
     line <- paste0(line, '\n')
-    prog <- parser$parse(line, lexer, debug = rly::NullLogger$new())
+    withCallingHandlers(
+      message = function(m) print(m),
+      prog <- parser$parse(line, lexer, debug = nolog)
+    )
     if (is.null(prog)) next
     keys <- names(prog)
-    if (is.numeric(keys)) {
+    if (suppressWarnings(!is.na(as.numeric(keys)))) {
       b$add_statements(prog)
     } else {
       stat <- prog[[keys[1]]]

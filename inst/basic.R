@@ -13,7 +13,7 @@ if (length(args) == 1) {
   browser()
   data <- paste(readLines(args[1]), collapse = '\n')
   prog <- basic_parse(data)
-  if (!prog) dtop('Cannot read file ', args[1])
+  if (!prog) stop('Cannot read file ', args[1])
   b <- BasicInterpreter$new(prog)
   tryCatch(b$run, error = function(e) e)
 } else {

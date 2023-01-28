@@ -63,7 +63,7 @@ BasicParser <- R6::R6Class(
     p_statement_interactive = function(doc='statement : RUN NEWLINE
                                                       | LIST NEWLINE
                                                       | NEW NEWLINE', p) {
-      p$set(1, list(p$get(1), 0))
+      p$set(1, list(p$get(2), p$get(2)))
     },
 
     # Blank line number

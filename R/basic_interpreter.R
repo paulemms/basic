@@ -16,7 +16,6 @@ BasicInterpreter <- R6::R6Class(
     loops = NULL,            # Currently active loops
     loopend = NULL,            # Mapping saying where loops end
     gosub = NULL,           # Gosub return point (if any)
-    error = NULL,              # Indicates program error
 
     stat = NULL,  # Ordered list of all line numbers
     pc = NULL,                  # Current program counter
@@ -67,13 +66,12 @@ BasicInterpreter <- R6::R6Class(
         }
       }
       if (has_end == 0) {
-        cat("NO END INSTRUCTION\n")
-        self$error <- 1
-        return()
+        e <- simpleError("NO END INSTRUCTION\n")
+        stop(e)
       }
       if (has_end != lineno) {
-        cat("END IS NOT LAST\n")
-        self$error <- 1
+        e <- simpleError("END IS NOT LAST")
+        stop(e)
       }
 
     },
@@ -96,8 +94,8 @@ BasicInterpreter <- R6::R6Class(
             }
           }
           if (!flag) {
-            cat(sprintf("FOR WITHOUT NEXT AT LINE %s\n", self$stat[self$pc]))
-            self$error <- 1
+            e <- simpleError(sprintf("FOR WITHOUT NEXT AT LINE %s\n", self$stat[self$pc]))
+            stop(e)
           }
         }
       }
@@ -243,7 +241,6 @@ BasicInterpreter <- R6::R6Class(
       self$loops <- list()
       self$loopend <- new.env(hash = TRUE)
       self$gosub <- NULL
-      self$error <- 0
 
       self$stat <- as.list(self$prog)
       self$stat <- names(self$stat)[order(as.integer(names(self$stat)))]
@@ -254,7 +251,6 @@ BasicInterpreter <- R6::R6Class(
       self$check_end()
       self$check_loops()
 
-      if (self$error) stop("RuntimeError")
       while (TRUE) {
         line <- self$stat[[self$pc]]
         instr <- self$prog[[line]]
@@ -355,24 +351,24 @@ BasicInterpreter <- R6::R6Class(
         else if (op == 'NEXT') {
           #browser()
           if (is.null(self$loops)) {
-            cat(sprintf("NEXT WITHOUT FOR AT LINE %s\n", line))
-            return()
+            e <- simpleError(sprintf("NEXT WITHOUT FOR AT LINE %s\n", line))
+            stop()
           }
           nextvar <- instr[[2]]
           self$pc <- self$loops[[length(self$loops)]][[1]]
           loopinst <- self$prog[[self$stat[self$pc]]]
           forvar <- loopinst[[2]]
           if (nextvar != forvar) {
-            cat(sprintf("NEXT DOESN'T MATCH FOR AT LINE %s\n",line))
-            return()
+            e <- simpleError(sprintf("NEXT DOESN'T MATCH FOR AT LINE %s\n",line))
+            stop(e)
           }
           next
         }
         else if (op == 'GOSUB') {
           newline <- instr[[2]]
           if (!is.null(self$gosub)) {
-            cat(sprintf("ALREADY IN A SUBROUTINE AT LINE %s\n", line))
-            return()
+            e <- simpleError(sprintf("ALREADY IN A SUBROUTINE AT LINE %s\n", line))
+            stop()
           }
           self$gosub <- self$stat[self$pc]
           self$goto(newline)
@@ -380,8 +376,8 @@ BasicInterpreter <- R6::R6Class(
         }
         else if (op == 'RETURN') {
           if (is.null(self$gosub)) {
-            cat(sprintf("RETURN WITHOUT A GOSUB AT LINE %s\n", line))
-            return()
+            e <- simpleError(sprintf("RETURN WITHOUT A GOSUB AT LINE %s\n", line))
+            stop(e)
           }
           self$goto(self$gosub)
           self$gosub <- NULL
@@ -426,7 +422,7 @@ BasicInterpreter <- R6::R6Class(
         'UNARY' = if (expr[[2]] == '-') return(paste0('-', expr[[2]])),
         'BINOP' = return(sprintf('%s %s %s', self$expr_str(expr[[3]]), expr[[2]],
                                  self$expr_str(expr[[4]]))),
-        'VAR' = return(self$var_str(expr[[1]]))
+        'VAR' = return(self$var_str(expr[[2]]))
       )
     },
 
@@ -447,29 +443,74 @@ BasicInterpreter <- R6::R6Class(
     list = function() {
       stat <- names(self$prog)      # Ordered list of all line numbers
       stat <- as.character(sort(as.integer(stat)))
-      browser()
       for (line in stat) {
+        instr <- self$prog[[line]]
         op <- instr[[1]]
-        switch(
+        txt <- switch(
           op,
           'END' = ,
           'STOP' = ,
-          'RETURN'= cat(sprintf("%s %s", line, op), '\n'),
-          'REM' = cat(sprintf("%s %s", line, instr[[2]]), '\n'),
-          'PRINT' = browser(),
-          'LET' = cat(sprintf("%s LET %s = %s", line, self$var_str(instr[[2]]),
-                            self$expr_str(instr[[3]]))),
-          'READ' = browser(),
-          'IF' = browser(),
-          'GOTO' = browser(),
-          'FOR' = browser(),
-          'NEXT' = browser(),
-          'FUNC' = browser(),
-          'DIM' = browser(),
-          'DATA' = browser(),
+          'RETURN'= sprintf("%s %s", line, op),
+          'REM' = sprintf("%s %s", line, instr[[2]]),
+          'PRINT' = {
+            out <- sprintf("%s %s ", line, op)
+            first <- TRUE
+            for (p in instr[[2]]) {
+              if (!first) out <- paste0(out, ", ")
+              if (!is.null(p[[1]]) && !is.null(p[[2]])) {
+                out <- paste0(out, sprintf('"%s"%s', p[[1]], self$expr_str(p[[2]])))
+              } else if (!is.null(p[[2]])) {
+                out <- paste0(out, self$expr_str(p[[2]]))
+              } else {
+                out <- paste0(out, sprintf('"%s"', p[[1]]))
+              }
+              first <- FALSE
+            }
+            out <- paste0(out, instr[[3]])
+            sprintf(out)
+            },
+          'LET' = sprintf("%s LET %s = %s", line, self$var_str(instr[[2]]),
+                            self$expr_str(instr[[3]])),
+          'READ' = sprintf("%s READ %s", line, paste(lapply(instr[[2]], self$var_str), collapse = ',')),
+          'IF' =  sprintf("%s IF %s THEN %d", line, self$relexpr_str(instr[[2]]), instr[[3]]),
+          'GOTO' = ,
+          'GOSUB' = sprintf("%s %s %s", line, op, instr[[2]]),
+          'FOR' = {
+            out <- sprintf("%s FOR %s = %s TO %s",
+                line, instr[[2]], self$expr_str(instr[[3]]), self$expr_str(instr[[4]]))
+            if (!is.null(instr[[5]]))
+              out <- paste0(out, sprintf(" STEP %s", self$expr_str(instr[[5]])))
+            sprintf(out)
+          },
+          'NEXT' = sprintf("%s NEXT %s", line, instr[[2]]),
+          'FUNC' =  sprintf("%s DEF %s(%s) = %s", line, instr[[2]], instr[[3]], self$expr_str(instr[[4]])),
+          'DIM' = {
+            out <- sprintf("%s DIM ", line)
+            first <- TRUE
+            for (i in instr[2]){
+              vname <- i[[1]]
+              x <- i[[2]]
+              y <- i[[3]]
+              if (!first) out <- paste0(out, ",")
+              first <- FALSE
+              if (y == 0) out <- paste0(out, sprintf("%s(%d)", vname, x)) else
+                  out <- paste0(out, sprintf("%s(%d,%d)", vname, x, y))
+            }
+            sprintf(out)
+          },
+          'DATA' = {
+            out <- sprintf("%s DATA ", line)
+            first <- TRUE
+            for (v in instr[[2]]) {
+              if (!first) out <- paste0(out, ",")
+              first <- 0
+              out <- paste0(out, v)
+            }
+            sprintf(out)
+          },
           stop()
         )
-
+        cat(txt, '\n')
       }
     },
     # def list(self):
@@ -498,19 +539,12 @@ BasicInterpreter <- R6::R6Class(
     #                 _out += self.var_str(r)
     #                 first = 0
     #             print(_out)
-    #         elif op == 'IF':
-    #             print("%s IF %s THEN %d" %
-    #                   (line, self.relexpr_str(instr[1]), instr[2]))
-    #         elif op == 'GOTO' or op == 'GOSUB':
-    #             print("%s %s %s" % (line, op, instr[1]))
     #         elif op == 'FOR':
     #             _out = "%s FOR %s = %s TO %s" % (
     #                 line, instr[1], self.expr_str(instr[2]), self.expr_str(instr[3]))
     #             if instr[4]:
     #                 _out += " STEP %s" % (self.expr_str(instr[4]))
     #             print(_out)
-    #         elif op == 'NEXT':
-    #             print("%s NEXT %s" % (line, instr[1]))
     #         elif op == 'FUNC':
     #             print("%s DEF %s(%s) = %s" %
     #                   (line, instr[1], instr[2], self.expr_str(instr[3])))

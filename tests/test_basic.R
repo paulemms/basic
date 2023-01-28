@@ -32,7 +32,7 @@ data <- '5 DIM A(A,2)\n 10 LET X=DIM \n 999 END \n'
 lexer <- rly::lex(BasicLexer)
 parser <- rly::yacc(BasicParser)
 withCallingHandlers(
-  message = function(m) cat(conditionMessage(m)),
+  message = function(m) print(m),
   prog <- parser$parse(data, lexer, debug = nolog)
 )
 b <- BasicInterpreter$new(prog)
