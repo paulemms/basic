@@ -330,7 +330,6 @@ BasicInterpreter <- R6::R6Class(
           finval <- instr[[4]]
           stepval <- instr[[5]]
 
-          #browser()
           # Check to see if this is a new loop
           if (length(self$loops) == 0 || self$loops[[length(self$loops)]][1] != self$pc) {
             # Looks like a new loop. Make the initial assignment
@@ -357,7 +356,6 @@ BasicInterpreter <- R6::R6Class(
           }
         }
         else if (op == 'NEXT') {
-          #browser()
           if (is.null(self$loops)) {
             e <- errorCondition(sprintf("NEXT WITHOUT FOR AT LINE %s", line),
                              line = line)
@@ -525,63 +523,6 @@ BasicInterpreter <- R6::R6Class(
         cat(txt, '\n')
       }
     },
-    # def list(self):
-    #         elif op == 'PRINT':
-    #             _out = "%s %s " % (line, op)
-    #             first = 1
-    #             for p in instr[1]:
-    #                 if not first:
-    #                     _out += ", "
-    #                 if p[0] and p[1]:
-    #                     _out += '"%s"%s' % (p[0], self.expr_str(p[1]))
-    #                 elif p[1]:
-    #                     _out += self.expr_str(p[1])
-    #                 else:
-    #                     _out += '"%s"' % (p[0],)
-    #                 first = 0
-    #             if instr[2]:
-    #                 _out += instr[2]
-    #             print(_out)
-    #         elif op == 'READ':
-    #             _out = "%s READ " % line
-    #             first = 1
-    #             for r in instr[1]:
-    #                 if not first:
-    #                     _out += ","
-    #                 _out += self.var_str(r)
-    #                 first = 0
-    #             print(_out)
-    #         elif op == 'FOR':
-    #             _out = "%s FOR %s = %s TO %s" % (
-    #                 line, instr[1], self.expr_str(instr[2]), self.expr_str(instr[3]))
-    #             if instr[4]:
-    #                 _out += " STEP %s" % (self.expr_str(instr[4]))
-    #             print(_out)
-    #         elif op == 'FUNC':
-    #             print("%s DEF %s(%s) = %s" %
-    #                   (line, instr[1], instr[2], self.expr_str(instr[3])))
-    #         elif op == 'DIM':
-    #             _out = "%s DIM " % line
-    #             first = 1
-    #             for vname, x, y in instr[1]:
-    #                 if not first:
-    #                     _out += ","
-    #                 first = 0
-    #                 if y == 0:
-    #                     _out += "%s(%d)" % (vname, x)
-    #                 else:
-    #                     _out += "%s(%d,%d)" % (vname, x, y)
-    #
-    #             print(_out)
-    #         elif op == 'DATA':
-    #             _out = "%s DATA " % line
-    #             first = 1
-    #             for v in instr[1]:
-    #                 if not first:
-    #                     _out += ","
-    #                 first = 0
-    #                 _out += v
-    #             print(_out)
 
     # Erase the current program
     erase = function() {self$prog <- NULL},
