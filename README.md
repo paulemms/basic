@@ -9,6 +9,11 @@
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
+This package allows you to edit and run scripts written in Dartmouth
+BASIC (1964). The package contains the grammar of the language, a lexer,
+a parser, and an interpreter. It is a port of the Python implementation
+by David Beasley to R and uses the R package rly.
+
 ## Installation
 
 You can install the current version of `basic` from Github by entering
