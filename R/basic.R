@@ -1,4 +1,5 @@
 # An implementation of Dartmouth BASIC (1964)
+#' @export
 basic <- function(basic_file = NULL) {
 
   lexer <- rly::lex(BasicLexer)
@@ -9,6 +10,7 @@ basic <- function(basic_file = NULL) {
   # If a runtime error occurs, we bail out and enter
   # interactive mode below
   if (!is.null(basic_file)) {
+    basic_file <- system.file(paste0('scripts/', basic_file), package = 'basic')
     if (!(file.exists(basic_file))) stop('Cannot read file ', basic_file)
     data <- paste(readLines(basic_file), collapse = '\n')
     data <- paste0(data, '\n')
