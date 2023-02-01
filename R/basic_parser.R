@@ -50,7 +50,8 @@ BasicParser <- R6::R6Class(
     # Format of all BASIC statements.
     p_statement = function(doc='statement : INTEGER command NEWLINE', p) {
       if (is.character(p$get(3))) {
-        m <- simpleMessage(sprintf("%s %s %s", p$get(3), "AT LINE", p$get(2)))
+        m <- messageCondition(sprintf("%s %s %s", p$get(3), "AT LINE", p$get(2)),
+                              line = as.integer(p$get(2)))
         signalCondition(m)
         p$set(1, NULL)
       } else {
@@ -74,7 +75,8 @@ BasicParser <- R6::R6Class(
 
     # Error handling for malformed statements
     p_statement_bad = function(doc='statement : INTEGER error NEWLINE', p) {
-      m <- simpleMessage(sprintf("MALFORMED STATEMENT AT LINE %s", p$get(2)))
+      m <- messageCondition(sprintf("MALFORMED STATEMENT AT LINE %s", p$get(2)),
+                            line = as.integer(p$get(2)))
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -90,7 +92,7 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_let_bad = function(doc='command : LET variable EQUALS error', p) {
-      m <- simpleMessage("BAD EXPRESSION IN LET")
+      m <- messageCondition("BAD EXPRESSION IN LET")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -101,7 +103,7 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_read_bad = function(doc='command : READ error', p) {
-      m <- simpleMessage("MALFORMED VARIABLE LIST IN READ")
+      m <- messageCondition("MALFORMED VARIABLE LIST IN READ")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -112,7 +114,7 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_bad = function(doc='command : DATA error', p) {
-      m <- simpleMessage("MALFORMED NUMBER LIST IN DATA")
+      m <- messageCondition("MALFORMED NUMBER LIST IN DATA")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -123,7 +125,7 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_print_bad = function(doc='command : PRINT error', p) {
-      m <- simpleMessage("MALFORMED PRINT STATEMENT")
+      m <- messageCondition("MALFORMED PRINT STATEMENT")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -151,7 +153,7 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_goto_bad = function(doc='command : GOTO error', p) {
-      m <- simpleMessage("INVALID LINE NUMBER IN GOTO")
+      m <- messageCondition("INVALID LINE NUMBER IN GOTO")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -162,13 +164,13 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_if_bad = function(doc='command : IF error THEN INTEGER', p) {
-      m <- simpleMessage("BAD RELATIONAL EXPRESSION")
+      m <- messageCondition("BAD RELATIONAL EXPRESSION")
       signalCondition(m)
       p$set(1, NULL)
     },
 
     p_command_if_bad2 = function(doc='command : IF relexpr THEN error', p) {
-      m <- simpleMessage("INVALID LINE NUMBER IN THEN")
+      m <- messageCondition("INVALID LINE NUMBER IN THEN")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -179,19 +181,19 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_for_bad_initial = function(doc='command : FOR ID EQUALS error TO expr optstep', p) {
-      m <- simpleMessage("BAD INITIAL VALUE IN FOR STATEMENT")
+      m <- messageCondition("BAD INITIAL VALUE IN FOR STATEMENT")
       signalCondition(m)
       p$set(1, NULL)
     },
 
     p_command_for_bad_final = function(doc='command : FOR ID EQUALS expr TO error optstep', p) {
-      m <- simpleMessage("BAD FINAL VALUE IN FOR STATEMENT")
+      m <- messageCondition("BAD FINAL VALUE IN FOR STATEMENT")
       signalCondition(m)
       p$set(1, NULL)
     },
 
     p_command_for_bad_step = function(doc='command : FOR ID EQUALS expr TO expr STEP error', p) {
-      m <- simpleMessage("MALFORMED STEP IN FOR STATEMENT")
+      m <- messageCondition("MALFORMED STEP IN FOR STATEMENT")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -212,7 +214,7 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_next_bad = function(doc='command : NEXT error', p) {
-      m <- simpleMessage("MALFORMED NEXT")
+      m <- messageCondition("MALFORMED NEXT")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -238,13 +240,13 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_def_bad_rhs = function(doc='command : DEF ID LPAREN ID RPAREN EQUALS error', p) {
-      m <- simpleMessage("BAD EXPRESSION IN DEF STATEMENT")
+      m <- messageCondition("BAD EXPRESSION IN DEF STATEMENT")
       signalCondition(m)
       p$set(1, NULL)
     },
 
     p_command_def_bad_arg = function(doc='command : DEF ID LPAREN error RPAREN EQUALS expr', p) {
-      m <- simpleMessage("BAD ARGUMENT IN DEF STATEMENT")
+      m <- messageCondition("BAD ARGUMENT IN DEF STATEMENT")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -255,7 +257,7 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_gosub_bad = function(doc='command : GOSUB error', p) {
-      m <- simpleMessage("INVALID LINE NUMBER IN GOSUB")
+      m <- messageCondition("INVALID LINE NUMBER IN GOSUB")
       signalCondition(m)
       p$set(1, NULL)
     },
@@ -271,7 +273,7 @@ BasicParser <- R6::R6Class(
     },
 
     p_command_dim_bad = function(doc='command : DIM error', p) {
-      m <- simpleMessage("MALFORMED VARIABLE LIST IN DIM")
+      m <- messageCondition("MALFORMED VARIABLE LIST IN DIM")
       signalCondition(m)
       p$set(1, "MALFORMED VARIABLE LIST IN DIM")
     },
@@ -407,7 +409,7 @@ BasicParser <- R6::R6Class(
     # Catastrophic error handler
     p_error = function(p) {
       if(!is.null(p)) {
-        m <- simpleMessage("Syntax error at EOF")
+        m <- messageCondition("Syntax error at EOF")
         signalCondition(m)
       }
     }
@@ -415,15 +417,11 @@ BasicParser <- R6::R6Class(
   )
 )
 
-basic_parse <- function(data, debug=rly::NullLogger$new()) {
-  p <- NULL
-  tryCatch({
-    lexer <- rly::lex(BasicLexer)
-    bparser <- rly::yacc(BasicParser)
-    p <- bparser$parse(data, lexer, debug = debug)
-  }, error = function(e) print(e))
-  return(p)
+
+messageCondition <- function(message, line = NA, call = sys.call(-1), ...) {
+  structure(
+    class = c("message", "condition"),
+    list(message = message, line = line, call = call, ...)
+  )
 }
-
-
 

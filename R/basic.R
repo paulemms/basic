@@ -1,10 +1,19 @@
 # An implementation of Dartmouth BASIC (1964)
+
+
+#' Basic interpreter
+#'
+#' @param basic_file Name of basic file in the scripts folder (default NULL gives interpreter command prompt)
+#'
+#' @param debug rly debugger
+#'
 #' @export
-basic <- function(basic_file = NULL) {
+#' @examples
+#' basic('hello.bas')
+basic <- function(basic_file = NULL, debug = rly::NullLogger$new()) {
 
   lexer <- rly::lex(BasicLexer)
-  parser <- rly::yacc(BasicParser)
-  nolog <- rly::NullLogger$new()
+  bparser <- rly::yacc(BasicParser)
 
   # If a filename has been specified, we try to run it.
   # If a runtime error occurs, we bail out and enter
@@ -16,7 +25,7 @@ basic <- function(basic_file = NULL) {
     data <- paste0(data, '\n')
     withCallingHandlers(
       message = function(m) print(m),
-      prog <- parser$parse(data, lexer, debug = nolog)
+      prog <- bparser$parse(data, lexer, debug = debug)
     )
     b <- BasicInterpreter$new(prog)
     tryCatch(b$run(), error = function(e) print(e))
@@ -32,7 +41,7 @@ basic <- function(basic_file = NULL) {
     line <- paste0(line, '\n')
     withCallingHandlers(
       message = function(m) print(m),
-      prog <- parser$parse(line, lexer, debug = nolog)
+      prog <- bparser$parse(line, lexer, debug = debug)
     )
     if (is.null(prog)) next
     keys <- names(prog)
