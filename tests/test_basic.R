@@ -19,7 +19,6 @@ devtools::load_all()
 #prog <- basic_parse('5 DEF F(X) = X^X\n 10 PRINT F(3)^2\n 999 END \n', debug = debuglog)
 #prog <- basic_parse('5 DIM A(2)\n 10 PRINT A(1)\n 999 END \n', debug = debuglog)
 #prog <- basic_parse("10 GOSUB 30\n 20 GOTO 50 \n30 PRINT 10\n 40 RETURN\n 50 END\n")
-#prog <- basic_parse("10 FOR I = 1 TO 5\n 20 PRINT I\n 30 NEXT I\n 999 END \n", debug = debuglog)
 
 data <- '10 LET I = 2\n 20 LET I = I + 1\n 30 PRINT I\n 999 END \n'
 data <- '10 LET X = 0\n 20 LET X = X + 1\n 30 PRINT X, SQR(X)\n40 IF X < 100 THEN 20\n 999 END\n'
@@ -28,16 +27,19 @@ data <- '5 READ A\n 10 PRINT A\n 20 DATA -7\n 999 END \n'
 data <- paste0(paste(readLines('inst/scripts/linear.bas'), collapse = '\n'), '\n')
 data <- '5 LET PRINT 2*(1.5+SIN((2)))\n 999 END \n'
 data <- '5 DIM A(A,2)\n 10 LET X=DIM \n 20 FOR I = 1 TO 10\n999 END \n'
+data <- '10 FOR I = 1 TO 20\n 15 FOR J = 1 TO 20\n 20 PRINT I*J;\n 30 NEXT J\n 40 NEXT I\n999 END \n'
 lexer <- rly::lex(BasicLexer)
 parser <- rly::yacc(BasicParser)
 withCallingHandlers(
+  error = function(e) print(e),
   message = function(m) print(m),
   prog <- parser$parse(data, lexer, debug = nolog)
 )
-b <- BasicInterpreter$new(prog)
-
-b$run()
-
+# don't run if any parser errors
+if (!any(sapply(prog, is.null))) {
+  b <- BasicInterpreter$new(prog)
+  b$run()
+}
 
 # lexer <- rly::lex(BasicLexer)
 # lexer$input("5 PxRINT 2\n 999 END \n")

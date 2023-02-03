@@ -356,7 +356,7 @@ BasicInterpreter <- R6::R6Class(
           }
         }
         else if (op == 'NEXT') {
-          if (is.null(self$loops)) {
+          if (length(self$loops) == 0) {
             e <- errorCondition(sprintf("NEXT WITHOUT FOR AT LINE %s", line),
                              line = line)
             stop(e)
