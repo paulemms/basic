@@ -38,9 +38,14 @@ To start the interpreter in the R console type:
 basic()
 ```
 
-To run a demo script type:
+To list and run a demo script type:
 
 ``` r
-basic('hello.bas')
+b <- basic('hello.bas')
+b$list()
+#> 5 REM HELLO WORLD PROGAM 
+#> 10 PRINT "HELLO WORLD" 
+#> 99 END
+b$run()
 #> HELLO WORLD
 ```

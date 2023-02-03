@@ -28,7 +28,6 @@ basic <- function(basic_file = NULL, debug = rly::NullLogger$new()) {
       prog <- bparser$parse(data, lexer, debug = debug)
     )
     b <- BasicInterpreter$new(prog)
-    tryCatch(b$run(), error = function(e) print(e))
     return(invisible(b))
   } else {
     b <- BasicInterpreter$new(list())
