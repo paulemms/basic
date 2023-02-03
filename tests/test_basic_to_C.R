@@ -38,7 +38,7 @@ withCallingHandlers(
 # don't run if any parser errors
 if (!any(sapply(prog, is.null))) {
   b <- BasicToC$new(prog)
-  b$convert()
+  b$list()
 }
 
 # lexer <- rly::lex(BasicLexer)

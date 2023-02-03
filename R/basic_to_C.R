@@ -1,8 +1,8 @@
-# This file provides the runtime support for running a basic program
+# Convert a BASIC program to C code
 
-BasicInterpreter <- R6::R6Class(
+BasicToC <- R6::R6Class(
 
-  classname = "BasicInterpreter",
+  classname = "BasicToC",
 
   public = list(
 
@@ -32,7 +32,7 @@ BasicInterpreter <- R6::R6Class(
 
         # Built-in function table
         self$functions <- list(
-          'SIN' = function(z) sin(self$eval(z)),
+          'SIN' = function(z) sprintf('sin(%s)', self$eval(z)),
           'COS' = function(z) cos(self$eval(z)),
           'TAN' = function(z) tan(self$eval(z)),
           'ATN' = function(z) atan(self$eval(z)),
@@ -241,8 +241,8 @@ BasicInterpreter <- R6::R6Class(
       self$pc <- match(linenum, self$stat)
     },
 
-    # Run it
-    run = function() {
+    # Convert it
+    convert = function() {
       self$vars <- new.env(hash = TRUE)
       self$lists <- new.env(hash = TRUE)
       self$tables <- new.env(hash = TRUE)
@@ -250,8 +250,8 @@ BasicInterpreter <- R6::R6Class(
       self$loopend <- new.env(hash = TRUE)
       self$gosub <- NULL
 
-      self$stat <- objects(self$prog)
-      self$stat <- self$stat[order(as.integer(self$stat))]
+      self$stat <- as.list(self$prog)
+      self$stat <- names(self$stat)[order(as.integer(names(self$stat)))]
       self$pc <- 1                  # Current program counter
 
       # Processing prior to running
@@ -265,7 +265,7 @@ BasicInterpreter <- R6::R6Class(
 
         op <- instr[[1]]
         # END and STOP statements
-        if (op %in% c('END', 'STOP')) {
+        if ((op == 'END') || (op == 'STOP')) {
           break           # We're done
         }
         # GOTO statement
@@ -299,7 +299,9 @@ BasicInterpreter <- R6::R6Class(
         }
         # LET statement
         else if (op == 'LET') {
-          self$assign(target = instr[[2]], value = instr[[3]])
+          target <- instr[[2]]
+          value <- instr[[3]]
+          self$assign(target, value)
         }
         # READ statement
         else if (op == 'READ') {
@@ -493,12 +495,29 @@ BasicInterpreter <- R6::R6Class(
           'NEXT' = sprintf("%s NEXT %s", line, instr[[2]]),
           'FUNC' =  sprintf("%s DEF %s(%s) = %s", line, instr[[2]], instr[[3]], self$expr_str(instr[[4]])),
           'DIM' = {
-            out <- lapply(split(instr[[2]], ceiling(seq_along(instr[[2]])/3)),
-                   function(x) if (x[[3]] == 0) sprintf("%s(%d)", x[[1]], x[[2]]) else
-                     sprintf("%s(%d,%d)", x[[1]], x[[2]], x[[3]]))
-            sprintf("%s DIM %s", line, paste(out, collapse = ','))
+            out <- sprintf("%s DIM ", line)
+            first <- TRUE
+            for (i in instr[2]){
+              vname <- i[[1]]
+              x <- i[[2]]
+              y <- i[[3]]
+              if (!first) out <- paste0(out, ",")
+              first <- FALSE
+              if (y == 0) out <- paste0(out, sprintf("%s(%d)", vname, x)) else
+                  out <- paste0(out, sprintf("%s(%d,%d)", vname, x, y))
+            }
+            sprintf(out)
           },
-          'DATA' = sprintf("%s DATA %s", line, paste(instr[[2]], collapse = ",")),
+          'DATA' = {
+            out <- sprintf("%s DATA ", line)
+            first <- TRUE
+            for (v in instr[[2]]) {
+              if (!first) out <- paste0(out, ",")
+              first <- 0
+              out <- paste0(out, v)
+            }
+            sprintf(out)
+          },
           stop()
         )
         cat(txt, '\n')
