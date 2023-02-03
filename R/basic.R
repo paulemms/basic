@@ -6,11 +6,14 @@
 #' @param basic_file Name of basic file in the scripts folder (default NULL gives interpreter command prompt)
 #'
 #' @param debug rly debugger
+#' @param home_dir home directory for basic files
 #'
 #' @export
 #' @examples
-#' basic('hello.bas')
-basic <- function(basic_file = NULL, debug = rly::NullLogger$new()) {
+#' b <- basic('hello.bas')
+#' b$run()
+basic <- function(basic_file = NULL, home_dir = system.file('scripts', package = 'basic'),
+                  debug = rly::NullLogger$new()) {
 
   lexer <- rly::lex(BasicLexer)
   bparser <- rly::yacc(BasicParser)
@@ -19,7 +22,7 @@ basic <- function(basic_file = NULL, debug = rly::NullLogger$new()) {
   # If a runtime error occurs, we bail out and enter
   # interactive mode below
   if (!is.null(basic_file)) {
-    basic_file <- system.file(paste0('scripts/', basic_file), package = 'basic')
+    basic_file <- file.path(home_dir, basic_file)
     if (!(file.exists(basic_file))) stop('Cannot read file ', basic_file)
     data <- paste(readLines(basic_file), collapse = '\n')
     data <- paste0(data, '\n')

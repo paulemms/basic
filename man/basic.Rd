@@ -4,10 +4,16 @@
 \alias{basic}
 \title{Basic interpreter}
 \usage{
-basic(basic_file = NULL, debug = rly::NullLogger$new())
+basic(
+  basic_file = NULL,
+  home_dir = system.file("scripts", package = "basic"),
+  debug = rly::NullLogger$new()
+)
 }
 \arguments{
 \item{basic_file}{Name of basic file in the scripts folder (default NULL gives interpreter command prompt)}
+
+\item{home_dir}{home directory for basic files}
 
 \item{debug}{rly debugger}
 }
@@ -15,5 +21,6 @@ basic(basic_file = NULL, debug = rly::NullLogger$new())
 Basic interpreter
 }
 \examples{
-basic('hello.bas')
+b <- basic('hello.bas')
+b$run()
 }
