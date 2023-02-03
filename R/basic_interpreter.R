@@ -250,8 +250,8 @@ BasicInterpreter <- R6::R6Class(
       self$loopend <- new.env(hash = TRUE)
       self$gosub <- NULL
 
-      self$stat <- as.list(self$prog)
-      self$stat <- names(self$stat)[order(as.integer(names(self$stat)))]
+      self$stat <- objects(self$prog)
+      self$stat <- self$stat[order(as.integer(self$stat))]
       self$pc <- 1                  # Current program counter
 
       # Processing prior to running
@@ -265,7 +265,7 @@ BasicInterpreter <- R6::R6Class(
 
         op <- instr[[1]]
         # END and STOP statements
-        if ((op == 'END') || (op == 'STOP')) {
+        if (op %in% c('END', 'STOP')) {
           break           # We're done
         }
         # GOTO statement
@@ -299,9 +299,7 @@ BasicInterpreter <- R6::R6Class(
         }
         # LET statement
         else if (op == 'LET') {
-          target <- instr[[2]]
-          value <- instr[[3]]
-          self$assign(target, value)
+          self$assign(target = instr[[2]], value = instr[[3]])
         }
         # READ statement
         else if (op == 'READ') {
@@ -495,18 +493,10 @@ BasicInterpreter <- R6::R6Class(
           'NEXT' = sprintf("%s NEXT %s", line, instr[[2]]),
           'FUNC' =  sprintf("%s DEF %s(%s) = %s", line, instr[[2]], instr[[3]], self$expr_str(instr[[4]])),
           'DIM' = {
-            out <- sprintf("%s DIM ", line)
-            first <- TRUE
-            for (i in instr[2]){
-              vname <- i[[1]]
-              x <- i[[2]]
-              y <- i[[3]]
-              if (!first) out <- paste0(out, ",")
-              first <- FALSE
-              if (y == 0) out <- paste0(out, sprintf("%s(%d)", vname, x)) else
-                  out <- paste0(out, sprintf("%s(%d,%d)", vname, x, y))
-            }
-            sprintf(out)
+            out <- lapply(split(instr[[2]], ceiling(seq_along(instr[[2]])/3)),
+                   function(x) if (x[[3]] == 0) sprintf("%s(%d)", x[[1]], x[[2]]) else
+                     sprintf("%s(%d,%d)", x[[1]], x[[2]], x[[3]]))
+            sprintf("%s DIM %s", line, paste(out, collapse = ','))
           },
           'DATA' = {
             out <- sprintf("%s DATA ", line)
