@@ -54,7 +54,7 @@ basic <- function(basic_file = NULL, home_dir = wd(),
         "RUN" = try(b$run()),
         "LIST" = b$list(),
         "BLANK" = b$del_line(stat[[2]]),
-        "NEW" = b$erase()
+        "NEW" = b <- BasicInterpreter$new(list())
       )
     }
   }
