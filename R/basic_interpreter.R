@@ -127,9 +127,7 @@ BasicInterpreter <- R6::R6Class(
         return(ret)
       }
       else if (etype == 'VAR') {
-        var <- expr[[2]][[1]]
-        dim1 <- expr[[2]][[2]]
-        dim2 <- expr[[2]][[3]]
+        g(var, dim1, dim2) %=% expr[[2]]
         if (is.null(dim1) && is.null(dim2)) {
           if (var %in% names(self$vars)) {
             return(self$vars[[var]])
@@ -195,9 +193,7 @@ BasicInterpreter <- R6::R6Class(
 
     # Assignment
     assign = function(target, value) {
-      var <- target[[1]]
-      dim1 <- if (length(target) > 1) target[[2]] else NULL
-      dim2 <- if (length(target) > 2) target[[3]] else NULL
+      g(var, dim1, dim2) %=% target[1:3]
       if (is.null(dim1) && is.null(dim2)) {
         self$vars[[var]] <- self$eval(value)
       }
@@ -205,7 +201,7 @@ BasicInterpreter <- R6::R6Class(
         # List assignment
         dim1val <- self$eval(dim1)
         if (!var %in% names(self$lists)) {
-          self$lists[[var]] = rep(0, 10)
+          self$lists[[var]] <- rep(0, 10)
         }
         if (dim1val > length(self$lists[[var]])) {
           e <- errorCondition(sprintf("DIMENSION TOO LARGE AT LINE %s", self$stat[self$pc]),
@@ -279,8 +275,7 @@ BasicInterpreter <- R6::R6Class(
           plist <- instr[[2]]
           out <- ""
           for (item in plist) {
-            label <- item[[1]]
-            val <- item[[2]]
+            g(label, val) %=% item[1:2]
             if (out != "") out <- paste0(out, strrep(' ', 15 - nchar(out) %% 15))
             out <- paste0(out, label)
             if (!is.null(val)) {
@@ -315,18 +310,14 @@ BasicInterpreter <- R6::R6Class(
           }
         }
         else if (op == 'IF') {
-          relop <- instr[[2]]
-          newline <- instr[[3]]
+          g(relop, newline) %=% instr[2:3]
           if (self$releval((relop))) {
             self$goto(newline)
             next
           }
         }
         else if (op == 'FOR') {
-          loopvar <- instr[[2]]
-          initval <- instr[[3]]
-          finval <- instr[[4]]
-          stepval <- instr[[5]]
+          g(loopvar, initval, finval, stepval) %=% instr[2:5]
 
           # Check to see if this is a new loop
           if (length(self$loops) == 0 || self$loops[[length(self$loops)]][1] != self$pc) {
@@ -391,9 +382,7 @@ BasicInterpreter <- R6::R6Class(
           self$gosub <- NULL
         }
         else if (op == 'FUNC') {
-          fname <- instr[[2]]
-          pname <- instr[[3]]
-          expr <- instr[[4]]
+          g(fname, pname, expr) %=% instr[2:4]
           eval_func <- function(pvalue) {
             self$assign(list(pname, NULL, NULL), pvalue)
             return(self$eval(expr))
@@ -403,9 +392,7 @@ BasicInterpreter <- R6::R6Class(
         else if (op == 'DIM') {
           el <- instr[[2]]
           for (j in seq(1, length(el), by = 3)) {
-            vname <- el[[j]]
-            x <- el[[j+1]]
-            y <- el[[j+2]]
+            g(vname, x, y) %=% el[j:(j+2)]
             if (y ==0) {
               # Single dimension variable
               self$lists[[vname]] <- rep(0, x)
@@ -427,10 +414,11 @@ BasicInterpreter <- R6::R6Class(
         expr[[1]],
         'NUM' = as.character(expr[[2]]),
         'GROUP' = sprintf('(%s)', self$expr_str(expr[[2]])),
-        'UNARY' = if (expr[[2]] == '-') return(paste0('-', expr[[2]])),
-        'BINOP' = return(sprintf('%s %s %s', self$expr_str(expr[[3]]), expr[[2]],
-                                 self$expr_str(expr[[4]]))),
-        'VAR' = return(self$var_str(expr[[2]]))
+        'UNARY' = if (expr[[2]] == '-') paste0('-', expr[[2]]),
+        'BINOP' = sprintf('%s %s %s', self$expr_str(expr[[3]]), expr[[2]],
+                                 self$expr_str(expr[[4]])),
+        'VAR' = self$var_str(expr[[2]]),
+        stop()
       )
     },
 
@@ -439,9 +427,7 @@ BasicInterpreter <- R6::R6Class(
     },
 
     var_str = function(var) {
-      varname <- var[[1]]
-      dim1 <- var[[2]]
-      dim2 <- var[[3]]
+      g(varname, dim1, dim2) %=% var[1:3]
       if (is.null(dim1) && is.null(dim2)) return(varname)
       if (!is.null(dim1) && is.null(dim2)) return(sprintf("%s(%s)", varname, self$expr_str(dim1)))
       return(sprintf("%s(%s,%s)", varname, self$expr_str(dim1), self$expr_str(dim2)))
@@ -521,4 +507,30 @@ BasicInterpreter <- R6::R6Class(
     }
   )
 )
+
+# multiple LH assignment to mimic Python
+
+# Generic form
+'%=%' <- function(l, r, ...) UseMethod('%=%')
+
+# Binary Operator
+'%=%.lbunch' <- function(l, r, ...) {
+  envir <- as.environment(-1)
+
+  if (length(r) > length(l))
+    warning("RHS has more args than LHS. Only first", length(l), "used.")
+
+  if (length(l) > length(r)) stop("LHS has more args than RHS.")
+
+  for (i in seq_along(l)) {
+    do.call('<-', list(l[[i]], r[[i]]), envir=envir)
+  }
+}
+
+# Grouping the left hand side
+g <- function(...) {
+  l <- as.list(substitute(list(...)))[-1L]
+  class(l) <- 'lbunch'
+  return(l)
+}
 

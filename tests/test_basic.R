@@ -13,8 +13,6 @@ devtools::load_all()
 #prog <- basic_parse(, debug = nolog)
 #prog <- basic_parse('5 PRINT "hi"\n 999 END \n', debug = debuglog)
 #prog <- basic_parse('5 LET A = 1\n 10 PRINT SIN(A)\n 999 END \n', debug = debuglog)
-#prog <- basic_parse('5 DIM A(2,2)\n 10 PRINT A(1,1)\n 999 END \n', debug = debuglog)
-#prog <- basic_parse('5 DIM A(2)\n 10 GOTO 998\n 999 END \n')#, debug = debuglog)
 #prog <- basic_parse('5 READ A,B,C\n 10 DATA 9,10,11\n 20 PRINT A,B,C\n 999 END \n')#, debug = debuglog)
 #prog <- basic_parse('5 DEF F(X) = X^X\n 10 PRINT F(3)^2\n 999 END \n', debug = debuglog)
 #prog <- basic_parse('5 DIM A(2)\n 10 PRINT A(1)\n 999 END \n', debug = debuglog)
@@ -29,6 +27,8 @@ data <- '5 DIM A(A,2)\n 10 LET X=DIM \n 20 FOR I = 1 TO 10\n999 END \n'
 data <- '10 FOR I = 1 TO 20\n 15 FOR J = 1 TO 20\n 20 PRINT I*J;\n 30 NEXT J\n 40 NEXT I\n999 END \n'
 data <- '5 DIM A(50,15), B(20) \n 20 PRINT B(1)\n999 END \n'
 data <- paste0(paste(readLines('inst/scripts/linear.bas'), collapse = '\n'), '\n')
+data <- '5 DIM A(2)\n 10 GOTO 998\n 999 END \n'
+data <- '5 DIM A(100,100)\n 10 PRINT A(2,2)\n 999 END \n'
 lexer <- rly::lex(BasicLexer)
 parser <- rly::yacc(BasicParser)
 withCallingHandlers(

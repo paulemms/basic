@@ -18,9 +18,7 @@ basic <- function(basic_file = NULL, home_dir = system.file('scripts', package =
   lexer <- rly::lex(BasicLexer)
   bparser <- rly::yacc(BasicParser)
 
-  # If a filename has been specified, we try to run it.
-  # If a runtime error occurs, we bail out and enter
-  # interactive mode below
+  # If a filename has been specified, we try to run it
   if (!is.null(basic_file)) {
     basic_file <- file.path(home_dir, basic_file)
     if (!(file.exists(basic_file))) stop('Cannot read file ', basic_file)
@@ -63,3 +61,21 @@ basic <- function(basic_file = NULL, home_dir = system.file('scripts', package =
 
 }
 
+
+#' @export
+lex2str <- function(basic_file, home_dir = system.file('scripts', package = 'basic')) {
+
+  basic_file <- file.path(home_dir, basic_file)
+  if (!(file.exists(basic_file))) stop('Cannot read file ', basic_file)
+  data <- paste(readLines(basic_file), collapse = '\n')
+
+  lexer <- rly::lex(BasicLexer)
+
+  token_list <- list()
+  lexer$input(data)
+  while(!is.null(token <- lexer$token())) {
+    token_list[[length(token_list) + 1]] <- token
+  }
+
+  paste(sapply(token_list, function(x) toString(x$value)), collapse = "|")
+}
