@@ -26,6 +26,10 @@ devtools::install_github("paulemms/basic")
 
 ## Usage
 
+It is easiest to use R from the terminal in RStudio because
+autocompletion of R commands soon gets annoying. In the terminal type
+`R` and then
+
 ``` r
 library(basic)
 packageVersion("basic")
@@ -37,9 +41,6 @@ To start the interpreter type at the R prompt:
 ``` r
 basic()
 ```
-
-It is easier to use R from the terminal in RStudio because that does not
-enable autocompletion.
 
 Paste the following text into the BASIC prompt:
 
