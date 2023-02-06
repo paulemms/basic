@@ -3,7 +3,7 @@
 
 #' Basic interpreter
 #'
-#' @param basic_file Name of basic file in the scripts folder (default NULL gives interpreter command prompt)
+#' @param basic_file Name of basic file (default NULL gives interpreter command prompt)
 #'
 #' @param debug rly debugger
 #' @param home_dir home directory for basic files (default is current working directory)
@@ -12,7 +12,7 @@
 #' @examples
 #' b <- basic('hello.bas')
 #' b$run()
-basic <- function(basic_file = NULL, home_dir = wd(),
+basic <- function(basic_file = NULL, home_dir = getwd(),
                   debug = rly::NullLogger$new()) {
 
   lexer <- rly::lex(BasicLexer)
