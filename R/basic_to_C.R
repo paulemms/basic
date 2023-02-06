@@ -25,7 +25,7 @@ BasicToC <- R6::R6Class(
     # dictionary of names
     names = new.env(hash=TRUE),
 
-    # Initialize the interpreter. prog is a dictionary
+    # Initialize the interpreter. prog is an environment
     # containing (line,statement) mappings
     initialize = function(prog) {
         self$prog <- prog

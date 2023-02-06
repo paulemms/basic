@@ -1,5 +1,8 @@
-# This file provides the runtime support for running a basic program
-
+#' @title BasicInterpreter object
+#'
+#' @description
+#' Class providing runtime support for running a basic program.
+#' @export
 BasicInterpreter <- R6::R6Class(
 
   classname = "BasicInterpreter",
@@ -8,11 +11,22 @@ BasicInterpreter <- R6::R6Class(
 
     prog = NULL,
 
+    #' @field functions (`list()`)\cr
+    #' Function table.
     functions = NULL,
 
-    vars = NULL,            # All variables
-    lists = NULL,            # List variables
-    tables = NULL,            # Tables
+    #' @field vars (`environment()`)\cr
+    #' All variables.
+    vars = NULL,
+
+    #' @field lists (`list()`)\cr
+    #' List variables.
+    lists = NULL,
+
+    #' @field tables (`matrix()`)\cr
+    #' Tables.
+    tables = NULL,
+
     loops = NULL,            # Currently active loops
     loopend = NULL,            # Mapping saying where loops end
     gosub = NULL,           # Gosub return point (if any)
@@ -25,8 +39,12 @@ BasicInterpreter <- R6::R6Class(
     # dictionary of names
     names = new.env(hash=TRUE),
 
-    # Initialize the interpreter. prog is a dictionary
-    # containing (line,statement) mappings
+    # .
+    #' @description
+    #' Initialize the interpreter.
+    #'
+    #' @param prog
+    #'  An environment containing (line, statement) mappings.
     initialize = function(prog) {
         self$prog <- prog
 
@@ -46,7 +64,9 @@ BasicInterpreter <- R6::R6Class(
 
     },
 
-    # Collect all data statements
+    #' @description
+    #' Collect all data statements.
+    #'
     collect_data = function() {
       self$data <- list()
       for (lineno in self$stat) {

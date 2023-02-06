@@ -17,6 +17,6 @@ basic(basic_file = NULL, home_dir = getwd(), debug = rly::NullLogger$new())
 Basic interpreter
 }
 \examples{
-b <- basic('hello.bas')
+b <- basic('hello.bas', home_dir = system.file('scripts', package = 'basic'))
 b$run()
 }

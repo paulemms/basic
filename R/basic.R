@@ -1,6 +1,32 @@
 # An implementation of Dartmouth BASIC (1964)
 
 
+#' Get BASIC lexer object
+#' @export
+basic_lexer <- local({
+
+  cache <- NULL
+
+  function() {
+    if (is.null(cache)) cache <<- rly::lex(BasicLexer)
+    cache
+  }
+
+})
+
+#' Get BASIC parser object
+#' @export
+basic_parser <- local({
+
+  cache <- NULL
+
+  function() {
+    if (is.null(cache)) cache <<- rly::yacc(BasicParser)
+    cache
+  }
+
+})
+
 #' Basic interpreter
 #'
 #' @param basic_file Name of basic file (default NULL gives interpreter command prompt)
@@ -10,13 +36,13 @@
 #'
 #' @export
 #' @examples
-#' b <- basic('hello.bas')
+#' b <- basic('hello.bas', home_dir = system.file('scripts', package = 'basic'))
 #' b$run()
 basic <- function(basic_file = NULL, home_dir = getwd(),
                   debug = rly::NullLogger$new()) {
 
-  lexer <- rly::lex(BasicLexer)
-  bparser <- rly::yacc(BasicParser)
+  lexer <- basic_lexer()
+  bparser <- basic_parser()
 
   # If a filename has been specified, we try to run it
   if (!is.null(basic_file)) {
