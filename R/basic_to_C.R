@@ -9,24 +9,21 @@ BasicToC <- R6::R6Class(
     prog = NULL,
 
     functions = NULL,
+    vars = NULL,
+    lists = NULL,
+    tables = NULL,
+    loops = NULL,
 
-    vars = NULL,            # All variables
-    lists = NULL,            # List variables
-    tables = NULL,            # Tables
-    loops = NULL,            # Currently active loops
-    loopend = NULL,            # Mapping saying where loops end
-    gosub = NULL,           # Gosub return point (if any)
+    loopend = NULL,
+    gosub = NULL,
 
     stat = NULL,  # Ordered list of all line numbers
-    pc = NULL,                  # Current program counter
     data = NULL,
     dc = NULL,
 
     # dictionary of names
     names = new.env(hash=TRUE),
 
-    # Initialize the interpreter. prog is an environment
-    # containing (line,statement) mappings
     initialize = function(prog) {
         self$prog <- prog
 
@@ -39,7 +36,7 @@ BasicToC <- R6::R6Class(
           'EXP' = function(z) exp(self$eval(z)),
           'ABS' = function(z) abs(self$eval(z)),
           'LOG' = function(z) log(self$eval(z)),
-          'SQR' = function(z) sqrt(self$eval(z)),
+          'SQR' = function(z) sprintf('sqrt(%s)', self$eval(z)),
           'INT' = function(z) as.integer(self$eval(z)),
           'RND' = function(z) runif(1)
         )
@@ -118,7 +115,7 @@ BasicToC <- R6::R6Class(
       else if (etype == 'BINOP') {
         ret <- switch(
           expr[[2]],
-          '+' = self$eval(expr[[3]]) + self$eval(expr[[4]]),
+          '+' = sprintf('%s + %s', self$eval(expr[[3]]), self$eval(expr[[4]])),
           '-' = self$eval(expr[[3]]) - self$eval(expr[[4]]),
           '*' = self$eval(expr[[3]]) * self$eval(expr[[4]]),
           '/' = self$eval(expr[[3]]) / self$eval(expr[[4]]),
@@ -132,7 +129,7 @@ BasicToC <- R6::R6Class(
         dim2 <- expr[[2]][[3]]
         if (is.null(dim1) && is.null(dim2)) {
           if (var %in% names(self$vars)) {
-            return(self$vars[[var]])
+            return(var)
           } else {
             e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s", var, self$stat[self$pc]),
                                 line = self$stat[self$pc])
@@ -176,30 +173,104 @@ BasicToC <- R6::R6Class(
       }
     },
 
+    # Infer type
+    type = function(expr) {
+      #browser()
+      etype <- expr[[1]]
+      if (etype == 'NUM') {
+        return(if (trunc(expr[[2]]) == expr[[2]]) 'int' else 'double')
+      }
+      # else if (etype == 'GROUP') {
+      #   return (self$eval(expr[[2]]))
+      # }
+      # else if (etype == 'UNARY') {
+      #   if (expr[[2]] =='-') return(-self$eval(expr[[3]]))
+      # }
+      # else if (etype == 'BINOP') {
+      #   ret <- switch(
+      #     expr[[2]],
+      #     '+' = self$eval(expr[[3]]) + self$eval(expr[[4]]),
+      #     '-' = self$eval(expr[[3]]) - self$eval(expr[[4]]),
+      #     '*' = self$eval(expr[[3]]) * self$eval(expr[[4]]),
+      #     '/' = self$eval(expr[[3]]) / self$eval(expr[[4]]),
+      #     '^' = self$eval(expr[[3]]) ^ self$eval(expr[[4]]),
+      #   )
+      #   return(ret)
+      # }
+      # else if (etype == 'VAR') {
+      #   var <- expr[[2]][[1]]
+      #   dim1 <- expr[[2]][[2]]
+      #   dim2 <- expr[[2]][[3]]
+      #   if (is.null(dim1) && is.null(dim2)) {
+      #     if (var %in% names(self$vars)) {
+      #       return(self$vars[[var]])
+      #     } else {
+      #       e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s", var, self$stat[self$pc]),
+      #                           line = self$stat[self$pc])
+      #       stop(e)
+      #     }
+      #   }
+      #   # May be a list lookup or a function evaluation
+      #   if (!is.null(dim1) && is.null(dim2)) {
+      #     if (var %in% names(self$functions)) {
+      #       # A function
+      #       return(self$functions[[var]](dim1))
+      #     } else {
+      #       # A list evaluation
+      #       if (var %in% names(self$lists)) {
+      #         dim1val <- self$eval(dim1)
+      #         if (dim1val < 1 || dim1val > length(self$lists[[var]])) {
+      #           e <- errorCondition(sprintf("LIST INDEX OUT OF BOUNDS AT LINE %s", self$stat[self$pc]),
+      #                               line = self$stat[self$pc])
+      #           stop(e)
+      #         }
+      #         return(self$lists[[var]][dim1val])
+      #       }
+      #     }
+      #   }
+      #   if (!is.null(dim1) && !is.null(dim2)) {
+      #     if (var %in% names(self$tables)) {
+      #       dim1val <- self$eval(dim1)
+      #       dim2val <- self$eval(dim2)
+      #       if (dim1val < 1 || dim1val > nrow(self$tables[[var]]) || dim2val < 1 ||
+      #           dim2val > ncol(self$tables[[var]])) {
+      #         e <- errorCondition(sprintf("TABLE INDEX OUT OUT BOUNDS AT LINE %s", self$stat[self$pc]),
+      #                             line = self$stat[self$pc])
+      #         stop(e)
+      #       }
+      #       return(self$tables[[var]][dim1val, dim2val])
+      #     }
+      #   }
+      #   e <- errorCondition(sprintf("UNDEFINED VARIABLE %s AT LINE %s", var, self$stat[self$pc]),
+      #                       line = self$stat[self$pc])
+      #   stop(e)
+      # }
+    },
+
     # Evaluate a relational expression
     releval = function(expr) {
       etype <- expr[[2]]
       lhs <- self$eval(expr[[3]])
       rhs <- self$eval(expr[[4]])
-      flag <- switch(
+      out <- switch(
         etype,
-        '<' = lhs < rhs,
-        '<=' = lhs <= rhs,
-        '>' = lhs > rhs,
-        '>=' = lhs >= rhs,
-        '=' = lhs == rhs,
-        '<>' = lhs != rhs
+        '<' = sprintf('%s < %s', lhs, rhs),
+        '<=' = sprintf('%s <= %s', lhs, rhs),
+        '>' = sprintf('%s > %s', lhs, rhs),
+        '>=' = sprintf('%s > %s', lhs, rhs),
+        '=' = sprintf('%s == %s', lhs, rhs),
+        '<>' = sprintf('%s != %s', lhs, rhs)
       )
-      return(flag)
+      return(out)
     },
 
     # Assignment
     assign = function(target, value) {
-      var <- target[[1]]
-      dim1 <- if (length(target) > 1) target[[2]] else NULL
-      dim2 <- if (length(target) > 2) target[[3]] else NULL
+      g(var, dim1, dim2) %=% target[1:3]
+
       if (is.null(dim1) && is.null(dim2)) {
-        self$vars[[var]] <- self$eval(value)
+        self$vars[[var]] <- self$type(value)
+        sprintf('%s %s = %s;', self$type(value), tolower(var), self$eval(value))
       }
       else if (!is.null(dim1) && is.null(dim2)) {
         # List assignment
@@ -215,6 +286,7 @@ BasicToC <- R6::R6Class(
         self$lists[[var]][dim1val] <- self$eval(value)
       }
       else if (!is.null(dim1) && !is.null(dim2)) {
+        browser()
         dim1val <- self$eval(dim1)
         dim2val <- self$eval(dim2)
         if (!var %in% names(self$tables)) {
@@ -252,15 +324,14 @@ BasicToC <- R6::R6Class(
 
       self$stat <- as.list(self$prog)
       self$stat <- names(self$stat)[order(as.integer(names(self$stat)))]
-      self$pc <- 1                  # Current program counter
 
       # Processing prior to running
       self$collect_data()          # Collect all of the data statements
       self$check_end()
       self$check_loops()
 
-      while (TRUE) {
-        line <- self$stat[[self$pc]]
+      output <- list()
+      for (line in self$stat){
         instr <- self$prog[[line]]
 
         op <- instr[[1]]
@@ -299,9 +370,7 @@ BasicToC <- R6::R6Class(
         }
         # LET statement
         else if (op == 'LET') {
-          target <- instr[[2]]
-          value <- instr[[3]]
-          self$assign(target, value)
+          output[[line]] <- self$assign(instr[[2]], instr[[3]])
         }
         # READ statement
         else if (op == 'READ') {
@@ -317,12 +386,12 @@ BasicToC <- R6::R6Class(
           }
         }
         else if (op == 'IF') {
-          relop <- instr[[2]]
-          newline <- instr[[3]]
-          if (self$releval((relop))) {
-            self$goto(newline)
-            next
-          }
+          # relop <- instr[[2]]
+          # newline <- instr[[3]]
+          # if (self$releval((relop))) {
+          #   self$goto(newline)
+          #   next
+          # }
         }
         else if (op == 'FOR') {
           loopvar <- instr[[2]]
@@ -418,9 +487,9 @@ BasicToC <- R6::R6Class(
           }
         }
 
-        self$pc <- self$pc + 1
-
       }
+      #browser()
+      output
     },
 
     # # Utility functions for program listing
