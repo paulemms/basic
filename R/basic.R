@@ -29,36 +29,56 @@ basic_parser <- local({
 
 #' Basic interpreter
 #'
-#' @param basic_file Name of basic file (default NULL gives interpreter command prompt)
+#' @param text Character string containing complete BASIC program (default NULL)
+#' @param file Name of basic file (default NULL)
 #'
 #' @param debug rly debugger
 #' @param home_dir home directory for basic files (default is current working directory)
 #'
 #' @export
 #' @examples
-#' b <- basic('hello.bas', home_dir = system.file('scripts', package = 'basic'))
+#' b <- basic(file='hello.bas', home_dir = system.file('scripts', package = 'basic'))
 #' b$run()
-basic <- function(basic_file = NULL, home_dir = getwd(),
-                  debug = rly::NullLogger$new()) {
+basic <- function(text = NULL, file = NULL, home_dir = getwd(), debug = rly::NullLogger$new()) {
+  stopifnot(!is.null(text) || !is.null(file))
 
   lexer <- basic_lexer()
   bparser <- basic_parser()
 
   # If a filename has been specified, we try to run it
-  if (!is.null(basic_file)) {
-    basic_file <- file.path(home_dir, basic_file)
+  if (!is.null(file)) {
+    basic_file <- file.path(home_dir, file)
     if (!(file.exists(basic_file))) stop('Cannot read file ', basic_file)
-    data <- paste(readLines(basic_file), collapse = '\n')
-    data <- paste0(data, '\n')
-    withCallingHandlers(
-      message = function(m) print(m),
-      prog <- bparser$parse(data, lexer, debug = debug)
-    )
-    b <- BasicInterpreter$new(prog)
-    return(invisible(b))
-  } else {
-    b <- BasicInterpreter$new(list())
+    text <- paste(readLines(basic_file), collapse = '\n')
   }
+  text <- paste0(text, '\n')
+
+  num_errors <- 0
+  withCallingHandlers(
+    message = function(m) {
+      print(m)
+      num_errors <<- num_errors + 1
+    },
+    prog <- bparser$parse(text, lexer, debug = debug)
+  )
+
+  b <- if (num_errors > 0) NULL else BasicInterpreter$new(prog)
+  return(invisible(b))
+}
+
+
+#' Interactive Basic interpreter
+#'
+#' @param debug rly debugger
+#'
+#' @export
+#' @examples
+#' basic()
+basic_shell <- function(debug = rly::NullLogger$new()) {
+
+  lexer <- basic_lexer()
+  bparser <- basic_parser()
+  b <- BasicInterpreter$new(list())
 
   # Interactive mode
   while(TRUE) {

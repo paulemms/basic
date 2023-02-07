@@ -4,10 +4,17 @@
 \alias{basic}
 \title{Basic interpreter}
 \usage{
-basic(basic_file = NULL, home_dir = getwd(), debug = rly::NullLogger$new())
+basic(
+  text = NULL,
+  file = NULL,
+  home_dir = getwd(),
+  debug = rly::NullLogger$new()
+)
 }
 \arguments{
-\item{basic_file}{Name of basic file (default NULL gives interpreter command prompt)}
+\item{text}{Character string containing complete BASIC program (default NULL)}
+
+\item{file}{Name of basic file (default NULL)}
 
 \item{home_dir}{home directory for basic files (default is current working directory)}
 
@@ -17,6 +24,6 @@ basic(basic_file = NULL, home_dir = getwd(), debug = rly::NullLogger$new())
 Basic interpreter
 }
 \examples{
-b <- basic('hello.bas', home_dir = system.file('scripts', package = 'basic'))
+b <- basic(file='hello.bas', home_dir = system.file('scripts', package = 'basic'))
 b$run()
 }

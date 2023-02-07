@@ -2,10 +2,10 @@
 % Please edit documentation in R/basic.R
 \name{basic_parser}
 \alias{basic_parser}
-\title{Get BASIC parser}
+\title{Get BASIC parser object}
 \usage{
 basic_parser()
 }
 \description{
-Get BASIC parser
+Get BASIC parser object
 }

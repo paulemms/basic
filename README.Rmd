@@ -43,7 +43,7 @@ packageVersion("basic")
 
 To start the interpreter type at the R prompt:
 ```{r, message=FALSE, warning=FALSE, echo=TRUE, eval=FALSE}
-basic()
+basic_shell()
 ```
  
 
@@ -58,9 +58,15 @@ Paste the following text into the BASIC prompt:
 To see the listing type `LIST` and to run the script type `RUN`. Use ESC or Ctrl-C to exit
 the BASIC interpreter.
 
-To list and run a demo script type at the R prompt:
+The following BASIC scripts are contained within the package:
 ```{r, message=FALSE, warning=FALSE, echo=TRUE}
-b <- basic('hello.bas', home_dir = system.file('scripts', package = 'basic'))
+scripts_dir <- system.file('scripts', package = 'basic')
+dir(scripts_dir)
+```
+
+To list and run one of these scripts type at the R prompt:
+```{r, message=FALSE, warning=FALSE, echo=TRUE}
+b <- basic(file = 'hello.bas', home_dir = scripts_dir)
 b$list()
 b$run()
 ```

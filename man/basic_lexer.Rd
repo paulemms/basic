@@ -2,10 +2,10 @@
 % Please edit documentation in R/basic.R
 \name{basic_lexer}
 \alias{basic_lexer}
-\title{Get BASIC lexer}
+\title{Get BASIC lexer object}
 \usage{
 basic_lexer()
 }
 \description{
-Get BASIC lexer
+Get BASIC lexer object
 }

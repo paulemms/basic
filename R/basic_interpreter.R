@@ -426,6 +426,8 @@ BasicInterpreter <- R6::R6Class(
         self$pc <- self$pc + 1
 
       }
+
+      return(invisible(self))
     },
 
     # # Utility functions for program listing
